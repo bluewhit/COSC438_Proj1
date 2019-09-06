@@ -6,3 +6,5 @@ Mini Project One, recreate a level from a classic video game.
 - Destiny: Background, Clouds,  Mushrooms
 - Whitney: Mario, Coins, Pullies 
 - Patrick: Castle, Flag, Bricks
+
+**Entire Level seems to be 2552 x 224 pixels** 

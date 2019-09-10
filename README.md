@@ -7,4 +7,9 @@ Mini Project One, recreate a level from a classic video game.
 - Whitney: Mario, Coins, Pullies 
 - Patrick: Castle, Flag, Bricks
 
-**Entire Level seems to be 2552 x 224 pixels** 
+## Notes 
+- pico 8 map editor is 8 screens wide.
+- screen is 128 x 128 
+
+## To Do by 9/17/2019 
+

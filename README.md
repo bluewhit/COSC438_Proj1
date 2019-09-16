@@ -14,4 +14,4 @@ Mini Project One, recreate a level from a classic video game.
 - youtube video (transparency) - https://www.youtube.com/watch?v=yYBXEA4ILbQ
 
 ## To Do by 9/17/2019
-
+- some code of each collison, jumping, and life system

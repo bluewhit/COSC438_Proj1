@@ -3,6 +3,9 @@ version 18
 __lua__
 -- mini project one mario
 
+t = true 
+f = false
+
 chr = { -- intialize our char
 
 	x = 18, -- x start 
@@ -25,7 +28,7 @@ grav = 0.2 -- gravity
 function _update()
 
 	startx = chr.x
-	
+	chr.onground = t
 	-- player movment
 	chr.dx = 0
 	if (btn(0)) then chr.dx=-1.8 chr.sprt = 22 end 
@@ -45,21 +48,55 @@ function _update()
 		 	
 		chr.dy =- chr.jump
 	end
-
 	
-	--camera(chr.x-startx)
+	--gravity
+	chr.dy+=grav 
+	
+	--fall
+	chr.y+=chr.dy
+	
+	--get the bottom center of the player
+	v=mget((chr.x+4)/8,(chr.y+8)/8)
+	
+ chr.isgrounded = f
+	
+	if chr.dy >= 0 then 
+		if fget(v,0) then 
+		
+			chr.y = flr((chr.y)/8)*8
+			chr.dy = 0
+			
+			chr.onground = t
+		end
+	end 
+	
+	--check the top of player 
+	v=mget((chr.x+4)/8,(chr.y)/8)
+	
+	if chr.dy <= 0 then 
+		
+		if fget(v,0) then 
+			chr.y = flr((chr.y+8)/8)*8
+			
+			chr.dy = 0
+			
+		end 
+		
+	end
+-- end function  
+ 
+	camera(chr.x)
 	 
 end 
 
 function _draw()
-
 	cls()
+	cls(12)
 	-- 16, 00 31, 16 
-	palt(0, false)
-	palt(11, true)
-	map(0,0,0,0,16,16)
+	palt(0, f)
+	palt(11, t)
 	map(16,0,0,0,127,127)
-	palt(0, true)
+	palt(0, t)
 	spr(chr.sprt,chr.x,chr.y)
 	
 end

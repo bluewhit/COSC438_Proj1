@@ -14,12 +14,27 @@ chr = { -- intialize our char
 	dx = 0, -- velocity 
 	dy = 0, -- velocity 
 	
-	sprt = 6, -- sprite start
-	flp = false,
-	life = 3, -- how many lives 
-	onground = false, -- is the character touching the ground 
-	jump = 3.4, -- how much to jump 
+	sprt = 21, -- sprite start
+	frm = 5, -- sprite frames per second
+	flp = f,
 	
+	life = 3, -- how many lives 
+	jump = 3.4, -- how much to jump 
+	wlk = f, -- if walking
+}
+
+map_data = {
+	offset_x = 0,
+	offset_y = 0
+}
+
+flag = {
+	sprt_1 = 29,
+	sprt_2 = 30,
+	x = 136,
+	y = 32,
+	dy = 0,
+	pon_flag = f
 }
 
 grav = 0.2 -- gravity 
@@ -27,61 +42,88 @@ grav = 0.2 -- gravity
 
 function _update()
 
-	startx = chr.x
-	
 	-- player movment
 	chr.dx = 0
-	if (btn(0)) then chr.dx=-1.8 chr.sprt = 22 end 
-	if (btn(1)) then chr.dx=1.8 chr.sprt = 6 end
 	
-	chr.x+=chr.dx
+	chr.wlk = f
 	
-	-- jumping 
-	if(btn(5)) or btn(2) and chr.onground then 
-		if chr.sprt == 6 or chr.sprt == 38 then 
-			chr.sprt = 21
+	if not flag.pon_flag then
+		if (btn(0)) then
+		 chr.dx=-1.8 
+		 chr.flp= t 
+		 
+		 if on_floor then 
+		 	chr.wlk = t
+		 else 
+		 	chr.sprt = 23
+		 	chr.wlk = f
+		 end 
+		 
 		end 
+		if (btn(1)) then
+		 chr.dx=1.8 
+		 chr.flp = f 
+		 
+		 if on_floor then 
+		 	chr.wlk = t
+		 else 
+		 	chr.sprt = 23
+		 	chr.wlk = f
+		 end 
+		 
+		end
 		
-		if chr.sprt == 22 or chr.sprt == 37 then 
-			chr.sprt = 23
-		end 
-		 	
-		chr.dy =- chr.jump
+		if chr.wlk then walking() else chr.sprt = 21 end
+		
+		chr.x+=chr.dx
+		
+		if in_left_wall() then
+			chr.x = flr((chr.x + 7) / 8) * 8
+			chr.dx = 0
+		elseif in_right_wall() then
+			chr.x = flr(chr.x / 8) * 8
+			chr.dx = 0
+		elseif in_flag() then
+			-- this is where they touched the flag
+			flag.pon_flag = t
+			chr.x = flr(chr.x / 8) * 8
+			chr.dy = 0
+		end
+		
+		-- player jumping 
+		if (btn(5) or btn(2)) and on_floor() then 
+			chr.wlk = f	
+			chr.dy =- chr.jump
+		end
+		
+		-- player gravity
+		if not on_floor() then
+			chr.dy+=grav
+			chr.sprt = 23 
+		end
+		
+		-- player fall
+		chr.y+=chr.dy
+		
+		chr.onground = t
+		
+		if in_roof() then
+			chr.y = flr((chr.y + 7) / 8) * 8
+			chr.dy = 0
+		elseif in_floor() then
+			chr.y = flr(chr.y / 8) * 8
+			chr.dy = 0
+		end
 	end
 	
-	--gravity
-	chr.dy+=grav 
-	
-	--fall
-	chr.y+=chr.dy
-	
-	--get the bottom center of the player
-	v=mget((chr.x+4)/8,(chr.y+8)/8)
-	
- chr.onground = f
-	
-	if chr.dy >= 0 then 
-		if fget(v,0) then 
-		
-			chr.y = flr((chr.y)/8)*8
-			chr.dy = 0
-			
-			chr.onground = t
+	-- flag movement
+	if flag.pon_flag and flag.y < chr.y then
+		flag.y += 1.7
+		if flag.y > chr.y then
+			flag.y = chr.y
+			-- this is where the level is finished
+			-- the flag has been brought down
 		end
-	end 
-	
-	--check the top of player 
-	v=mget((chr.x+4)/8,(chr.y)/8)
-	
-	if chr.dy <= 0 then 
-		
-		if fget(v,0) then 
-			chr.y = flr((chr.y+8)/8)*8
-			
-			chr.dy = 0
-			
-		end 
-		
 	end
 -- end function  
  
@@ -96,39 +138,109 @@ function _draw()
 	-- 16, 00 31, 16 
 	palt(0, f)
 	palt(11, t)
-	map(0,0,0,0,127,127)
+	map(map_data.offset_x, map_data.offset_y, 0, 0, 128, 16)
 	palt(0, t)
-	spr(chr.sprt,chr.x,chr.y)
 	
+	-- render the flag if they are on the second part of the map
+	if map_data.offset_y == 16 then
+		spr(flag.sprt_1, flag.x, flag.y)
+		spr(flag.sprt_2, flag.x + 8, flag.y)
+	end
+	
+	spr(chr.sprt, chr.x, chr.y, 1,1, chr.flp)
 end
 
+function walking()
 
+chr.frm=chr.frm-1
+	if chr.frm<0 then 
+		chr.sprt = chr.sprt + 1
+		if chr.sprt > 22 then chr.sprt = 21 end
+		chr.frm = 5
+	end 
+
+end 
+
+function on_floor()
+	local x1 = flr(chr.x / 8) + map_data.offset_x
+	local x2 = flr((chr.x + 7) / 8) + map_data.offset_x
+	local y = flr((chr.y + 8) / 8) + map_data.offset_y
+	local map_cell1 = mget(x1, y)
+	local map_cell2 = mget(x2, y)
+	return fget(map_cell1, 0) or fget(map_cell2, 0)
+end
+
+function in_floor()
+	local x1 = flr(chr.x / 8) + map_data.offset_x
+	local x2 = flr((chr.x + 7) / 8) + map_data.offset_x
+	local y = flr((chr.y + 7) / 8) + map_data.offset_y
+	local map_cell1 = mget(x1, y)
+	local map_cell2 = mget(x2, y)
+	return fget(map_cell1, 0) or fget(map_cell2, 0)
+end
+
+function in_roof()
+	local x1 = flr(chr.x / 8) + map_data.offset_x
+	local x2 = flr((chr.x + 7) / 8) + map_data.offset_x
+	local y = flr(chr.y / 8) + map_data.offset_y
+	local map_cell1 = mget(x1, y)
+	local map_cell2 = mget(x2, y)
+	return fget(map_cell1, 0) or fget(map_cell2, 0)
+end
+
+function in_left_wall()
+	local x = flr(chr.x / 8) + map_data.offset_x
+	local y1 = flr(chr.y / 8) + map_data.offset_y
+	local y2 = flr((chr.y + 7) / 8) + map_data.offset_y
+	local map_cell1 = mget(x, y1)
+	local map_cell2 = mget(x, y2)
+	return fget(map_cell1, 0) or fget(map_cell2, 0)
+end
+
+function in_right_wall()
+	local x = flr((chr.x + 7) / 8) + map_data.offset_x
+	local y1 = flr(chr.y / 8) + map_data.offset_y
+	local y2 = flr((chr.y + 7) / 8) + map_data.offset_y
+	local map_cell1 = mget(x, y1)
+	local map_cell2 = mget(x, y2)
+	return fget(map_cell1, 0) or fget(map_cell2, 0)
+end
+
+function in_flag()
+	local x = flr(chr.x / 8) + map_data.offset_x
+	if chr.x >= x * 8 and chr.x <= x * 8 + 2 then
+		local y = flr(chr.y / 8) + map_data.offset_y
+		local map_cell = mget(x, y)
+		return fget(map_cell, 2)
+	end
+	return false
+end
 
 __gfx__
-00000000bb9992bbbbfffffffffffbbbffffffffbbbbbbfb08888880fbbbbbbbccccccccaaaaaaaab444444b4fff0ff044404440ffbbbfffff404fff00004440
-00000000b994992bbf444bbbbb444fbbbbbbbbbbbbbbbbfb888f1ffffbbbbbbbcccccccc8888888849999992f4440440000000004fbbbf444f000f4400000000
-00700700b949292bf44044bbb44044fbbbbbbbbbbbbbbbfb4f4ff440fbbbbbbbcccccccc9bb99bb949444992f4440004404440444fbbbf444f444f4400004044
-00077000b949292bf40004bbb40004fbbbbbbbbbbbbbbbfb44ff4400fbbbbbbbcccccccc9999999949999292f4440440000000000fffff000fffff0000000000
-00077000b949292bf44044bbb44044fbbbbbbbbbbbbbbbfb0d8dd8d0fbbbbbbbcccccccc88888888499229920444044044404440444044404440444000004440
-00700700b992992bfb444bbbbb444bfbbbbbbbbbbbbbbbfb0d8888d0fbbbbbbbccccccccbbbbbbbb49999992f004044000000000000000000000000000000000
-00000000bb9992bbfbbbbbbbbbbbbbfbbbbbbbbbbbbbbbfb00888800fbbbbbbbccccccccbbbbbbbb49929992f440444040444044404440444044404400004044
-00000000bb222bbbfbbbbbbbbbbbbbfbbbbbbbbbbbbbbbfb00400400fbbbbbbbccccccccbbbbbbbb422222220004000400000000000000000000000000000000
-0000000000000000c0000000000000000000000c088888808888888088888880cccccccc000ccccc444000004ffffff0bbb99bbbbbbb777777779bbbbbbbbbbb
-0000000000000000088899999889999998888990888f1ffffff1f888fff1f888ccccc0007770cccc00000000f4ffff00bbb99bbbbbbbb77733379bbbbbbbbbbb
-00000000000000000888988999998899998899804f4ff440044ff4f4044ff4f4cccc077777770ccc40440000ff444400bbb99bbbbbbbbb7773779bbbbbbbbbbb
-00000000000000000889988999988889999998804dff44d00044ff440d44ffd4ccc0077776770ccc00000000ff444400bbb99bbbbbbbbbb733379bbbbbbbbbbb
-00000000000000000999999999988889999998800d8dd8d00d8dd8d00d8dd8d0cc077777776770cc44400000ff444400bbb99bbbbbbbbbbb77779bbbbbb88bbb
-0000000000000000099899999998888999999880008888000d8888d000888800c07766777777770c00000000ff444400bbb99bbbbbbbbbbbb7779bbbbbb88bbb
-0000000000000000099999999999889998899980048888400088880004888840c07677777777777040440000f0000040bbb99bbbbbbbbbbbbb779bbbbbb00bbb
-0000000000000000c0000000000000000000000c00000000004004000000000007777777777777700000000000000004bbb99bbbbbbbbbbbbbb79bbbbbb99bbb
+00000000bb9992bbbbfffffffffffbbbffffffffbbbbbbfb00000000fbbbbbbbccccccccaaaaaaaab444444b4fff0ff044404440ffbbbfffff404fff00004440
+00000000b994992bbf444bbbbb444fbbbbbbbbbbbbbbbbfb00000000fbbbbbbbcccccccc8888888849999992f4440440000000004fbbbf444f000f4400000000
+00700700b949292bf44044bbb44044fbbbbbbbbbbbbbbbfb00000000fbbbbbbbcccccccc9bb99bb949444992f4440004404440444fbbbf444f444f4400004044
+00077000b949292bf40004bbb40004fbbbbbbbbbbbbbbbfb00000000fbbbbbbbcccccccc9999999949999292f4440440000000000fffff000fffff0000000000
+00077000b949292bf44044bbb44044fbbbbbbbbbbbbbbbfb00000000fbbbbbbbcccccccc88888888499229920444044044404440444044404440444000004440
+00700700b992992bfb444bbbbb444bfbbbbbbbbbbbbbbbfb00000000fbbbbbbbccccccccbbbbbbbb49999992f004044000000000000000000000000000000000
+00000000bb9992bbfbbbbbbbbbbbbbfbbbbbbbbbbbbbbbfb00000000fbbbbbbbccccccccbbbbbbbb49929992f440444040444044404440444044404400004044
+00000000bb222bbbfbbbbbbbbbbbbbfbbbbbbbbbbbbbbbfb00000000fbbbbbbbccccccccbbbbbbbb422222220004000400000000000000000000000000000000
+0000000000000000c0000000000000000000000c088888800000000008888880cccccccc000ccccc444000004ffffff0bbb99bbbbbbb777777779bbbbbbbbbbb
+0000000000000000088899999889999998888990888f1fff08888880888f1fffccccc0007770cccc00000000f4ffff00bbb99bbbbbbbb77733379bbbbbbbbbbb
+00000000000000000888988999998899998899804f4ff440888f1fff4f4ff440cccc077777770ccc40440000ff444400bbb99bbbbbbbbb7773779bbbbbbbbbbb
+000000000000000008899889999888899999988044ff44004f4ff4404dff44d0ccc0077776770ccc00000000ff444400bbb99bbbbbbbbbb733379bbbbbbbbbbb
+00000000000000000999999999988889999998800d8dd8d044ff44000d8dd8d0cc077777776770cc44400000ff444400bbb99bbbbbbbbbbb77779bbbbbb88bbb
+00000000000000000998999999988889999998800d8888d00d8dd8d000888800c07766777777770c00000000ff444400bbb99bbbbbbbbbbbb7779bbbbbb88bbb
+0000000000000000099999999999889998899980008888000d8888d004888840c07677777777777040440000f0000040bbb99bbbbbbbbbbbbb779bbbbbb00bbb
+0000000000000000c0000000000000000000000c00400400008888000000000007777777777777700000000000000004bbb99bbbbbbbbbbbbbb79bbbbbb99bbb
 0000000000000000000000000ffffff00ffffff00000000000000000000000007777777777777777000000000000000000000000000000000000000000000000
-0000000000000000000000000ffffff00ffffff08888888008888880000000000767776677777677000000000000000000000000000000000000000000000000
-0000000000000000000000000ffffff00ffffff0fff1f888888f1fff000000000776767666766670000000000000000000000000000000000000000000000000
-0000000000000000000000000ff44ff00ffffff0044ff4f44f4ff44000000000c077677776667770000000000000000000000000000000000000000000000000
-00000000000000000000000004f4f4f00ffffff00044ff4444ff440000000000c07777707777700c000000000000000000000000000000000000000000000000
-0000000000000000000000000f4fff400ffffff00d8dd8d00d8dd8d000000000cc07770c07770ccc000000000000000000000000000000000000000000000000
-0000000000000000000000000ffffff00ffffff00d8888d00d8888d000000000ccc000ccc000cccc000000000000000000000000000000000000000000000000
-0000000000000000000000000ffffff00ffffff0008888000088880000000000cccccccccccccccc000000000000000000000000000000000000000000000000
+0000000000000000000000000ffffff00ffffff00000000000000000000000000767776677777677000000000000000000000000000000000000000000000000
+0000000000000000000000000ffffff00ffffff00000000000000000000000000776767666766670000000000000000000000000000000000000000000000000
+0000000000000000000000000ff44ff00ffffff0000000000000000000000000c077677776667770000000000000000000000000000000000000000000000000
+00000000000000000000000004f4f4f00ffffff0000000000000000000000000c07777707777700c000000000000000000000000000000000000000000000000
+0000000000000000000000000f4fff400ffffff0000000000000000000000000cc07770c07770ccc000000000000000000000000000000000000000000000000
+0000000000000000000000000ffffff00ffffff0000000000000000000000000ccc000ccc000cccc000000000000000000000000000000000000000000000000
+0000000000000000000000000ffffff00ffffff0000000000000000000000000cccccccccccccccc000000000000000000000000000000000000000000000000
 __label__
 ccccccccccccccccccccccccccccccccccccccccaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaccccccccccccccccaaaaaaaacccccccccccccccccccccccccccccccc
 cccccccccccccccccccccccccccccccccccccccc88888888888888888888888888888888cccccccccccccccc88888888cccccccccccccccccccccccccccccccc

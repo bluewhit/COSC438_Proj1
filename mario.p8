@@ -8,25 +8,36 @@ f = false
 
 chr = { -- intialize our char
 
-	x = 18, -- x start 
-	y = 104, -- y start 
-	
-	dx = 0, -- velocity 
-	dy = 0, -- velocity 
-	
+	x = 18, -- x start
+	y = 104, -- y start
+
+
+	dx = 0, -- velocity
+	dy = 0, -- velocity
+
 	sprt = 21, -- sprite start
 	sprt_top = 37, -- top sprite used for big
 	frm = 5, -- sprite frames per second
 	flp = f,
-	life = 3, -- how many lives 
-	jump = 3.4, -- how much to jump 
+	life = 3, -- how many lives
+	jump = 3.4, -- how much to jump
 	wlk = f, -- if walking
-	big = f -- if they consumed the powerup
+	big = f, -- if they consumed the powerup
+	died = f
 }
 
 map_data = {
 	offset_x = 0,
 	offset_y = 0
+}
+
+--map boundaries
+-- x and y end are for the end of the map
+map_bound = {
+	x_start = 0,
+	bottom = 128,
+	x_end = 23,
+	y_end = 29
 }
 
 flag = {
@@ -64,35 +75,36 @@ grav = 0.2 -- gravity
 function _update()
 	-- player movment
 	chr.dx = 0
-	
+
 	if (btn(0)) and not st.pon_flag then
 		chr.dx = -1.8
 		chr.flp = t
-		
-		if on_floor() then 
+		if(chr.x < map_bound.x_start) then chr.x = 0 end
+
+		if on_floor() then
 			chr.wlk = t
 		else
 			chr.sprt = 23
 			chr.wlk = f
 		end
-		
+--camera adjust
 		if(chr.x - cam.x < (64 - 10)) then
 			cam.x += chr.dx
 			if(cam.x < 0) then cam.x = 0 end
 		end
 	end
-	
+
 	if (btn(1)) and not st.pon_flag then
 		chr.dx = 1.8
 		chr.flp = f
-		
-		if on_floor() then 
+
+		if on_floor() then
 			chr.wlk = t
 		else
 			chr.sprt = 23
 			chr.wlk = f
 		end
-		
+--camera adjust
 		if (chr.x - cam.x > (64 + 10)) then cam.x += chr.dx end
 	end
 
@@ -123,19 +135,19 @@ function _update()
 		chr.x = flr(chr.x / 8) * 8
 		chr.dy = 0
 	end
-	
-	-- player jumping 
-	if (btn(5) or btn(2)) and on_floor() then 
+
+	-- player jumping
+	if (btn(5) or btn(2)) and on_floor() then
 		if not (st.pon_flag and (flag.y != flag.low_y or chr.y != flag.low_chr_y)) then
 			if st.pon_flag then
 				st.pon_flag = f
 				chr.y = 96
 			end
-			chr.wlk = f		
+			chr.wlk = f
 			chr.dy =- chr.jump
 		end
 	end
-	
+
 	-- player gravity
 	if not on_floor() then
 		chr.dy+=grav
@@ -146,9 +158,12 @@ function _update()
 			chr.sprt = 55
 		end
 	end
-	
+
 	-- player fall
 	chr.y+=chr.dy
+	--player falls
+	if(chr.y > map_bound.bottom) then kill_player() end
+
 	if in_roof() then
 		if not st.powerup.hit and is_powerup_block() then
 			st.powerup.hit = t
@@ -165,7 +180,7 @@ function _update()
 		chr.dy = 0
 		chr.wlk = t
 	end
-	
+
 	-- flag and player on flag movement
 	if st.pon_flag and not flag.is_down then
 		flag.y += 1.7
@@ -180,7 +195,7 @@ function _update()
 			flag.is_down = t
 		end
 	end
-	
+
 	-- mushroom slide up
 	if st.powerup.hit and not st.powerup.claim and st.powerup.dy < 0 then
 		if st.powerup.y < st.powerup.end_y then
@@ -189,41 +204,45 @@ function _update()
 		end
 		st.powerup.y += st.powerup.dy
 	end
-	
+
 	-- mushroom powerup touch detection
 	if is_mushroom_sprite() then
 		st.powerup.claim = t
 		chr.big = t
 		chr.sprt = 53
 	end
- 
+
 	camera(cam.x, cam.y)
-	 
+
 end
 
 function _draw()
 
 	cls()
 	cls(12)
-	-- 16, 00 31, 16 
+	-- 16, 00 31, 16
 	palt(0, f)
 	palt(11, t)
-	
+
 	map(map_data.offset_x, map_data.offset_y, 0, 0, 128, 16)
 	map(map_data.offset_x, map_data.offset_y+18, 128*7.50,16,128,16)
 	palt(0, t)
-	
+	--game over screen
+	if(chr.life < 1) then
+		print('Game Over', 16, 16, 8)
+		chr.life = 3
+	end
 	-- render the flag if they are on the second part of the map
 	if map_data.offset_y == 16 then
 		spr(flag.sprt_1, flag.x, flag.y)
 		spr(flag.sprt_2, flag.x + 8, flag.y)
 	end
-	
+
 	-- render the powerup mushroom
 	if map_data.offset_y == 0 and st.powerup.hit and not st.powerup.claim then
 		spr(32, st.powerup.x, st.powerup.y)
 	end
-	
+
 	if not chr.big then
 		spr(chr.sprt, chr.x, chr.y, 1,1, chr.flp)
 	else
@@ -234,7 +253,7 @@ end
 
 function walking()
 	chr.frm=chr.frm-1
-	if chr.frm<0 then 
+	if chr.frm<0 then
 		chr.sprt = chr.sprt + 1
 		if not chr.big and chr.sprt > 22 then chr.sprt = 21 end
 		if chr.big then
@@ -245,8 +264,17 @@ function walking()
 			end
 		end
 		chr.frm = 5
-	end 
-end 
+	end
+end
+
+function kill_player()
+	chr.life -= 1
+	chr.x = 18
+	chr.y = 104
+	cam.x = 0
+	cam.y = 0
+end
+
 
 function on_floor()
 	local x1 = flr(chr.x / 8) + map_data.offset_x

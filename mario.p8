@@ -210,6 +210,7 @@ function _draw()
 	palt(11, t)
 	
 	map(map_data.offset_x, map_data.offset_y, 0, 0, 128, 16)
+	map(map_data.offset_x, map_data.offset_y+18, 128*7.50,16,128,16)
 	palt(0, t)
 	
 	-- render the flag if they are on the second part of the map

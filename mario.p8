@@ -83,8 +83,8 @@ end
 
 function _draw()
 	if(game_state == 0) then title_draw()
-	elseif(game_state==1) then game_draw()
-	else game_over_draw()
+	elseif(game_state==2) then game_over_draw()
+	else game_draw()
 	end
 end
 
@@ -100,7 +100,7 @@ function game_over_init()
 	game_state = 2
 end
 
---works for both title and game over??
+--works for both title and game over
 function menu_update()
 	if(btn(4)) then game_init() end
 end
@@ -255,6 +255,10 @@ function title_draw()
 	print("Press C to Start", 32, 66, 7)
 end
 
+function game_over_draw()
+	print("Game Over!", 32, 58, 8)
+	print("Press C to Start", 32, 66, 8)
+end
 function game_draw()
 
 	cls()
@@ -269,7 +273,7 @@ function game_draw()
 
 --life counter
 spr(33, cam.x, cam.y)
-print(" x " ..tostr(chr.life), cam.x + 11, cam.y + 2)
+print(" x " ..tostr(chr.life), cam.x + 11, cam.y + 2, 7)
 --coin get
 if(mget(chr.x, chr.y) == 1) then mset(chr.x, chr.y, 8) end
 
@@ -310,8 +314,8 @@ end
 
 function kill_player()
 	chr.life -= 1
-	if (chr.life < 1) then
-		--game over??
+	if (chr.life < 0) then
+		game_over_init()
 		chr.life = 3
 	end
 	chr.big = f

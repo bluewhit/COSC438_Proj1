@@ -2,7 +2,9 @@ pico-8 cartridge // http://www.pico-8.com
 version 18
 __lua__
 -- mini project one mario
-
+-- Destiny Adams,
+-- Whitney Trovinger
+-- Patrick Romero
 function _init()
 	t = true
 	f = false
@@ -158,7 +160,7 @@ function game_update()
 		end
 
 		chr.x+=chr.dx
-		
+
 		-- map scrolling offset y for collision detect
 		if chr.x >= 1024 then
 			map_data.offset_x = -128
@@ -167,7 +169,7 @@ function game_update()
 			map_data.offset_x = 0
 			map_data.offset_y = 0
 		end
-		
+
 		if in_left_wall() then
 			chr.x = flr((chr.x + 7) / 8) * 8
 			chr.dx = 0
@@ -186,8 +188,8 @@ function game_update()
 		end
 
 		-- player jumping
-		if (btn(5) or btn(2)) and on_floor() then 
-			chr.wlk = f		
+		if (btn(5) or btn(2)) and on_floor() then
+			chr.wlk = f
 			chr.dy =- chr.jump
 		end
 	end
@@ -205,7 +207,7 @@ function game_update()
 
 	-- player fall
 	chr.y+=chr.dy
-	
+
 	if(chr.y > map_bound.bottom) then kill_player() end
 
 	if in_roof() then
@@ -263,12 +265,12 @@ function game_update()
 		chr.big = t
 		chr.sprt = 53
 	end
-	
+
 	-- automatic walking animation into castle
 	if flag.is_down and chr.visible then
 		chr.x += 1.8
 		if (chr.x - cam.x > (64 + 10)) then cam.x += 1.8 end
-		
+
 		walking()
 		if chr.x > 1136 then
 			chr.visible = f
@@ -289,6 +291,7 @@ function game_over_draw()
 	print("Game Over!", cam.x + 32, 58, 8)
 	print("Press C to Start", cam.x + 32, 66, 8)
 end
+
 function game_draw()
 
 	cls()
